@@ -10,11 +10,14 @@ sleep_time = 120
 acceptable_extensions = [".jpg",".JPG",".png",".PNG"]
 
 parser = argparse.ArgumentParser(description="Cycle through all wallpapers in a folder")
-parser.add_argument('-s', '--shuffle', action='store_true', dest='shuffle')
+parser.add_argument('-s', '--shuffle', action='store_true', dest='shuffle', help="Shuffle photo order")
+parser.add_argument('-t', '--time', default=sleep_time, dest='time', help="How many seconds to wait between switching wallpapers")
 
 args = parser.parse_args()
 
-conn = sqlite3.connect("wallpapers.db")
+script_dir = os.path.dirname(os.path.realpath(__file__))
+print("Opening database at %s" % os.path.join(script_dir,"wallpapers.db"))
+conn = sqlite3.connect(os.path.join(script_dir,"wallpapers.db"))
 
 c = conn.cursor()
 c.execute("CREATE TABLE IF NOT EXISTS wallpapers (FILE TEXT PRIMARY KEY, LASTTS REAL);")
@@ -66,6 +69,6 @@ while True:
     print("Setting %s as new wallpaper..." % filename)
     ctypes.windll.user32.SystemParametersInfoA(20, 0, os.fsencode(os.path.join(wallpapers_folder,filename)), 0)
 
-    time.sleep(sleep_time)
+    time.sleep(int(args.time))
 
     updateDB()
