@@ -5,7 +5,7 @@ import ctypes
 import argparse
 import random
 
-wallpapers_folder = "D:\\Documents\\static wallpapers"
+wallpapers_folder = "C:\\users\\jordan\\Documents\\static wallpapers"
 sleep_time = 120
 acceptable_extensions = [".jpg",".JPG",".png",".PNG"]
 
