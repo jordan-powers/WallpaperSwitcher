@@ -9,6 +9,7 @@
 #include <thread>
 #include <Windows.h>
 #include <csignal>
+#include <sstream>
 
 using namespace std::filesystem;
 using namespace std::chrono;
@@ -26,11 +27,25 @@ double time_now() {
     return ms.count() / (double)1000000;
 }
 
+void error_out(std::string msg) {
+    wchar_t* wmsg = new wchar_t[msg.length() + 1];
+    mbstowcs_s(NULL, wmsg, msg.length() + 1, msg.c_str(), _TRUNCATE);
+    MessageBox(
+        NULL,
+        wmsg,
+        L"WallpaperManager Error",
+        MB_OK
+    );
+    delete[] wmsg;
+    exit(EXIT_FAILURE);
+}
+
 void update_db(sqlite3* db, const path find_path, const std::vector<std::string> ext) {
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, "SELECT FILE FROM wallpapers;", -1, &stmt, nullptr)) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
     std::list<std::string> tracked_files;
     int rc;
@@ -39,8 +54,9 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
         tracked_files.push_back(row);
     }
     if (rc != SQLITE_DONE) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
     sqlite3_finalize(stmt);
 
@@ -54,15 +70,17 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
                 else {
                     std::cout << "Adding " << item_path << "\n";
                     if (sqlite3_prepare_v2(db, "INSERT INTO wallpapers VALUES ( ? , ? );", -1, &stmt, nullptr)) {
-                        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-                        exit(EXIT_FAILURE);
+                        std::ostringstream msg;
+                        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+                        error_out(msg.str());
                     }
                     sqlite3_bind_text(stmt, 1, item_path.string().c_str(), -1, SQLITE_TRANSIENT);
                     sqlite3_bind_double(stmt, 2, time_now());
                     rc = sqlite3_step(stmt);
                     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
-                        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-                        exit(EXIT_FAILURE);
+                        std::ostringstream msg;
+                        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+                        error_out(msg.str());
                     }
                     sqlite3_finalize(stmt);
                 }
@@ -73,14 +91,16 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
     for (auto& p : tracked_files) {
         std::cout << "Removing " << p << "\n";
         if (sqlite3_prepare_v2(db, "DELETE FROM wallpapers WHERE FILE=?;", -1, &stmt, nullptr)) {
-            std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-            exit(EXIT_FAILURE);
+            std::ostringstream msg;
+            msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+            error_out(msg.str());
         }
         sqlite3_bind_text(stmt, 1, p.c_str(), -1, SQLITE_TRANSIENT);
         rc = sqlite3_step(stmt);
         if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
-            std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-            exit(EXIT_FAILURE);
+            std::ostringstream msg;
+            msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+            error_out(msg.str());
         }
         sqlite3_finalize(stmt);
     }
@@ -89,17 +109,20 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
 void set_wallpaper(sqlite3 *db) {
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, "SELECT FILE FROM wallpapers ORDER BY LASTTS ASC LIMIT 1;", -1, &stmt, nullptr)) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
     int rc;
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_ROW) {
         if (rc == SQLITE_DONE) {
-            std::cerr << "No wallpapers found!\n";
+            error_out("No wallpapers found!\n");
         }
         else {
-            std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
+            std::ostringstream msg;
+            msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+            error_out(msg.str());
         }
         exit(EXIT_FAILURE);
     }
@@ -107,15 +130,17 @@ void set_wallpaper(sqlite3 *db) {
     sqlite3_finalize(stmt);
 
     if (sqlite3_prepare_v2(db, "UPDATE wallpapers SET LASTTS=? WHERE FILE=?;", -1, &stmt, nullptr)) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
     sqlite3_bind_text(stmt, 2, filestr.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_double(stmt, 1, time_now());
     rc = sqlite3_step(stmt);
     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
     sqlite3_finalize(stmt);
 
@@ -126,7 +151,7 @@ void set_wallpaper(sqlite3 *db) {
     SystemParametersInfoA(20, 0, (PVOID) file.string().c_str(), 0);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance,
+int WinMain(HINSTANCE hInstance,
     HINSTANCE hPrevInstance,
     LPSTR    lpCmdLine,
     int       cmdShow)
@@ -149,13 +174,18 @@ int WINAPI WinMain(HINSTANCE hInstance,
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 
+    HANDLE mutex = CreateMutexA(NULL, true, "powers.wallpapermanager.singleinstance");
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        error_out("Instance already running!");
+    }
 
     int rc;
 
     rc = sqlite3_open_v2(database_path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
     if (rc) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
 
     rc = sqlite3_exec(db,
@@ -164,8 +194,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
         nullptr,
         nullptr);
     if (rc) {
-        std::cerr << "sqlite3 error: " << sqlite3_errmsg(db) << "\n";
-        exit(EXIT_FAILURE);
+        std::ostringstream msg;
+        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+        error_out(msg.str());
     }
 
     while (!is_exited) {
