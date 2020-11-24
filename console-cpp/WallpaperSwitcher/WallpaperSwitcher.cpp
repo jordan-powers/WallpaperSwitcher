@@ -40,7 +40,7 @@ void error_out(std::string msg) {
     MessageBox(
         NULL,
         wmsg,
-        L"WallpaperManager Error",
+        L"WallpaperSwitcher Error",
         MB_OK
     );
     delete[] wmsg;
@@ -196,7 +196,7 @@ int WinMain(HINSTANCE hInstance,
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 
-    HANDLE mutex = CreateMutexA(NULL, true, "powers.wallpapermanager.singleinstance");
+    HANDLE mutex = CreateMutexA(NULL, true, "powers.wallpaperswitcher.singleinstance");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
         error_out("Instance already running!");
     }
