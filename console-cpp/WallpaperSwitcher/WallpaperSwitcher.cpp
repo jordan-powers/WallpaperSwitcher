@@ -1,6 +1,7 @@
 // WallpaperSwitcher.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+#include "pch.h"
 #include <iostream>
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -10,9 +11,15 @@
 #include <Windows.h>
 #include <csignal>
 #include <sstream>
+#include <winrt/Windows.System.UserProfile.h>
+#include <winrt/Windows.Storage.h>
 
 using namespace std::filesystem;
 using namespace std::chrono;
+
+using namespace winrt;
+using namespace Windows::Storage;
+using namespace Windows::System::UserProfile;
 
 bool is_exited = false;
 
@@ -106,7 +113,22 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
     }
 }
 
-void set_wallpaper(sqlite3 *db) {
+void set_wallpaper(path wallpaper) {
+    SystemParametersInfoA(20, 0, (PVOID)wallpaper.string().c_str(), 0);
+}
+
+void set_lockscreen(path lockscreen) {
+    std::string lstring = lockscreen.string();
+    wchar_t* wlstring = new wchar_t[lstring.length() + 1];
+    mbstowcs_s(NULL, wlstring, lstring.length() + 1, lstring.c_str(), _TRUNCATE);
+
+    StorageFile file = StorageFile::GetFileFromPathAsync(wlstring).get();
+    LockScreen::SetImageFileAsync(file).get();
+
+    delete[] wlstring;
+}
+
+void update_outputs(sqlite3 *db) {
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, "SELECT FILE FROM wallpapers ORDER BY LASTTS ASC LIMIT 1;", -1, &stmt, nullptr)) {
         std::ostringstream msg;
@@ -146,9 +168,9 @@ void set_wallpaper(sqlite3 *db) {
 
     path file(filestr);
 
-    std::cout << "Setting wallpaper to " << file.filename() << "\n";
+    set_wallpaper(file);
+    set_lockscreen(file);
 
-    SystemParametersInfoA(20, 0, (PVOID) file.string().c_str(), 0);
 }
 
 int WinMain(HINSTANCE hInstance,
@@ -201,7 +223,7 @@ int WinMain(HINSTANCE hInstance,
 
     while (!is_exited) {
         update_db(db, wallpaper_folder, exts);
-        set_wallpaper(db);
+        update_outputs(db);
         std::this_thread::sleep_for(milliseconds(sleep_time * 1000));
     }
 
