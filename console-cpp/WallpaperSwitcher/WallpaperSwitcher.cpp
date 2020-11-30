@@ -82,7 +82,7 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
                         error_out(msg.str());
                     }
                     sqlite3_bind_text(stmt, 1, item_path.string().c_str(), -1, SQLITE_TRANSIENT);
-                    sqlite3_bind_double(stmt, 2, time_now());
+                    sqlite3_bind_double(stmt, 2, 0);
                     rc = sqlite3_step(stmt);
                     if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
                         std::ostringstream msg;
