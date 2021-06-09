@@ -31,19 +31,6 @@ double time_now() {
     return ms.count() / (double)1000000;
 }
 
-void error_out(std::string msg) {
-    wchar_t* wmsg = new wchar_t[msg.length() + 1];
-    mbstowcs_s(NULL, wmsg, msg.length() + 1, msg.c_str(), _TRUNCATE);
-    MessageBox(
-        NULL,
-        wmsg,
-        L"WallpaperSwitcher Error",
-        MB_OK
-    );
-    delete[] wmsg;
-    exit(EXIT_FAILURE);
-}
-
 void update_db(Database database, const FileSource source) {
     auto entries = database.getAllEntries();
     auto wallpapers = source.getWallpapers();
@@ -109,7 +96,8 @@ int WinMain(HINSTANCE hInstance,
 
     HANDLE mutex = CreateMutexA(NULL, true, "powers.wallpaperswitcher.singleinstance");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        error_out("Instance already running!");
+        SystemFunctions::messagebox("Instance already running!");
+        return 1;
     }
 
     string dbFile = source.getDatabase().string();
