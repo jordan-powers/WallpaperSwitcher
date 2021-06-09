@@ -152,6 +152,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Database.cpp" />
     <ClCompile Include="FileSource.cpp" />
     <ClCompile Include="SystemFunctions.cpp" />
     <ClCompile Include="WallpaperSwitcher.cpp">
@@ -162,6 +163,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Database.h" />
     <ClInclude Include="FileSource.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="SystemFunctions.h" />
