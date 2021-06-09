@@ -1,15 +1,13 @@
 #include "pch.h"
-#include <winrt/base.h>
+#include <Windows.h>
+
 #include <iostream>
 #include <filesystem>
 #include <chrono>
 #include <thread>
-#include <Windows.h>
 #include <csignal>
 #include <algorithm>
 #include <iterator>
-#include <winrt/Windows.System.UserProfile.h>
-#include <winrt/Windows.Storage.h>
 
 #include "SystemFunctions.h"
 #include "FileSource.h"
@@ -18,10 +16,6 @@
 using namespace std;
 using namespace std::filesystem;
 using namespace std::chrono;
-
-using namespace winrt;
-using namespace Windows::Storage;
-using namespace Windows::System::UserProfile;
 
 bool is_exited = false;
 
@@ -81,21 +75,6 @@ void update_db(Database database, const FileSource source) {
     }
 }
 
-void set_wallpaper(path wallpaper) {
-    SystemParametersInfoA(20, 0, (PVOID)wallpaper.string().c_str(), 0);
-}
-
-void set_lockscreen(path lockscreen) {
-    std::string lstring = lockscreen.string();
-    wchar_t* wlstring = new wchar_t[lstring.length() + 1];
-    mbstowcs_s(NULL, wlstring, lstring.length() + 1, lstring.c_str(), _TRUNCATE);
-
-    StorageFile file = StorageFile::GetFileFromPathAsync(wlstring).get();
-    LockScreen::SetImageFileAsync(file).get();
-
-    delete[] wlstring;
-}
-
 void update_outputs(Database database) {
     auto nextEntryOptional = database.getNextEntry();
 
@@ -112,8 +91,8 @@ void update_outputs(Database database) {
 
     path file(entry.path);
 
-    set_wallpaper(file);
-    set_lockscreen(file);
+    SystemFunctions::setWallpaper(file);
+    SystemFunctions::setLockScreen(file);
 }
 
 int WinMain(HINSTANCE hInstance,

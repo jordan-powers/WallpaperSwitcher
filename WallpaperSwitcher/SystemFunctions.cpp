@@ -4,8 +4,16 @@
 #include <stdlib.h>
 #include <Windows.h>
 
+#include <winrt/base.h>
+#include <winrt/Windows.System.UserProfile.h>
+#include <winrt/Windows.Storage.h>
+
 using namespace std;
 using namespace std::filesystem;
+
+using namespace winrt;
+using namespace Windows::Storage;
+using namespace Windows::System::UserProfile;
 
 path SystemFunctions::getHomeDir() {
     char* buff;
@@ -28,4 +36,19 @@ void SystemFunctions::messagebox(string msg) {
         MB_OK
     );
     delete[] wmsg;
+}
+
+void SystemFunctions::setWallpaper(path wallpaper) {
+    SystemParametersInfoA(20, 0, (PVOID)wallpaper.string().c_str(), 0);
+}
+
+void SystemFunctions::setLockScreen(path lockscreen) {
+    std::string lstring = lockscreen.string();
+    wchar_t* wlstring = new wchar_t[lstring.length() + 1];
+    mbstowcs_s(NULL, wlstring, lstring.length() + 1, lstring.c_str(), _TRUNCATE);
+
+    StorageFile file = StorageFile::GetFileFromPathAsync(wlstring).get();
+    LockScreen::SetImageFileAsync(file).get();
+
+    delete[] wlstring;
 }
