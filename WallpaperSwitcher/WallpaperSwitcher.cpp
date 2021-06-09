@@ -1,7 +1,5 @@
-// WallpaperSwitcher.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include "pch.h"
+#include <winrt/base.h>
 #include <iostream>
 #include <sqlite3.h>
 #include <stdlib.h>
@@ -14,6 +12,9 @@
 #include <winrt/Windows.System.UserProfile.h>
 #include <winrt/Windows.Storage.h>
 
+#include "SystemFunctions.h"
+#include "FileSource.h"
+
 using namespace std::filesystem;
 using namespace std::chrono;
 
@@ -22,6 +23,7 @@ using namespace Windows::Storage;
 using namespace Windows::System::UserProfile;
 
 bool is_exited = false;
+
 
 void signal_handler(int signum) {
     is_exited = true;
@@ -47,7 +49,7 @@ void error_out(std::string msg) {
     exit(EXIT_FAILURE);
 }
 
-void update_db(sqlite3* db, const path find_path, const std::vector<std::string> ext) {
+void update_db(sqlite3* db, const FileSource source) {
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, "SELECT FILE FROM wallpapers;", -1, &stmt, nullptr)) {
         std::ostringstream msg;
@@ -67,31 +69,28 @@ void update_db(sqlite3* db, const path find_path, const std::vector<std::string>
     }
     sqlite3_finalize(stmt);
 
-    for (auto& p : recursive_directory_iterator(find_path)) {
-        auto item_path = p.path();
-        if (item_path.has_extension()) {
-            if (std::find(ext.begin(), ext.end(), item_path.extension().string()) != ext.end()) {
-                if (std::find(tracked_files.begin(), tracked_files.end(), item_path.string()) != tracked_files.end()) {
-                    tracked_files.remove(item_path.string());
-                }
-                else {
-                    std::cout << "Adding " << item_path << "\n";
-                    if (sqlite3_prepare_v2(db, "INSERT INTO wallpapers VALUES ( ? , ? );", -1, &stmt, nullptr)) {
-                        std::ostringstream msg;
-                        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
-                        error_out(msg.str());
-                    }
-                    sqlite3_bind_text(stmt, 1, item_path.string().c_str(), -1, SQLITE_TRANSIENT);
-                    sqlite3_bind_double(stmt, 2, 0);
-                    rc = sqlite3_step(stmt);
-                    if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
-                        std::ostringstream msg;
-                        msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
-                        error_out(msg.str());
-                    }
-                    sqlite3_finalize(stmt);
-                }
+    auto wallpapers = source.getWallpapers();
+
+    for (auto& item : wallpapers) {
+        if (std::find(tracked_files.begin(), tracked_files.end(), item.string()) != tracked_files.end()) {
+            tracked_files.remove(item.string());
+        }
+        else {
+            std::cout << "Adding " << item << "\n";
+            if (sqlite3_prepare_v2(db, "INSERT INTO wallpapers VALUES ( ? , ? );", -1, &stmt, nullptr)) {
+                std::ostringstream msg;
+                msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+                error_out(msg.str());
             }
+            sqlite3_bind_text(stmt, 1, item.string().c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_double(stmt, 2, 0);
+            rc = sqlite3_step(stmt);
+            if (rc != SQLITE_DONE && rc != SQLITE_ROW) {
+                std::ostringstream msg;
+                msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
+                error_out(msg.str());
+            }
+            sqlite3_finalize(stmt);
         }
     }
 
@@ -178,19 +177,10 @@ int WinMain(HINSTANCE hInstance,
     LPSTR    lpCmdLine,
     int       cmdShow)
 {
-    char* buff;
-    size_t numelem;
-    const char* _exts[] = { ".jpg", ".png" };
     const int sleep_time = 120;
-    std::vector<std::string> exts(_exts, _exts + (sizeof(_exts) / sizeof(char*)));
 
-    _dupenv_s(&buff, &numelem, "USERPROFILE");
-    path wallpaper_folder(buff);
-    free(buff);
-    
-    wallpaper_folder /= "Documents\\wallpapers";
+    FileSource source;
 
-    path database_path = wallpaper_folder / "wallpapers.db";
     sqlite3 *db;
 
     signal(SIGINT, signal_handler);
@@ -203,7 +193,7 @@ int WinMain(HINSTANCE hInstance,
 
     int rc;
 
-    rc = sqlite3_open_v2(database_path.string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+    rc = sqlite3_open_v2(source.getDatabase().string().c_str(), &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
     if (rc) {
         std::ostringstream msg;
         msg << "sqlite3 error(" << sqlite3_errcode(db) << "): " << sqlite3_errmsg(db);
@@ -222,7 +212,7 @@ int WinMain(HINSTANCE hInstance,
     }
 
     while (!is_exited) {
-        update_db(db, wallpaper_folder, exts);
+        update_db(db, source);
         update_outputs(db);
         std::this_thread::sleep_for(milliseconds(sleep_time * 1000));
     }
@@ -231,14 +221,3 @@ int WinMain(HINSTANCE hInstance,
 
     return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
