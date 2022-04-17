@@ -7,7 +7,7 @@
 
 class Database {
 public:
-    Database(std::string& dbFile);
+    Database(const std::string& dbFile);
     virtual ~Database();
 
     struct Entry {
@@ -28,7 +28,7 @@ public:
     void addEntry(const Entry&);
 
 private:
-    void initConnection(std::string& dbFile);
+    void initConnection(const std::string& dbFile);
     void initTable();
 
     void showSQLErrorAndBail();

@@ -9,4 +9,5 @@ namespace SystemFunctions {
 
     void setWallpaper(std::filesystem::path);
     void setLockScreen(std::filesystem::path);
+
 }

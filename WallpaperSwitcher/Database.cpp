@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Database::Database(string& dbFile) {
+Database::Database(const string& dbFile) {
     initConnection(dbFile);
     initTable();
 }
@@ -20,7 +20,7 @@ void Database::showSQLErrorAndBail() {
     assert(false);
 }
 
-void Database::initConnection(string& dbFile) {
+void Database::initConnection(const string& dbFile) {
     if (sqlite3_open_v2(dbFile.c_str(), &connection, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr)) {
         showSQLErrorAndBail();
     }
@@ -39,7 +39,7 @@ void Database::initTable() {
 
 vector<Database::Entry> Database::getAllEntries() {
     sqlite3_stmt *stmt;
-    if (sqlite3_prepare_v2(connection, "SELECT FILE, LASTTS FROM wallpapers;", -1, &stmt, nullptr)) {
+    if (sqlite3_prepare_v2(connection, "SELECT FILE, LASTTS FROM wallpapers ORDER BY FILE ASC;", -1, &stmt, nullptr)) {
         showSQLErrorAndBail();
     }
 

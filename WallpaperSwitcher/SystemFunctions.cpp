@@ -5,8 +5,9 @@
 #include <Windows.h>
 
 #include <winrt/base.h>
-#include <winrt/Windows.System.UserProfile.h>
+#include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Storage.h>
+#include <winrt/Windows.System.UserProfile.h>
 
 using namespace std;
 using namespace std::filesystem;
