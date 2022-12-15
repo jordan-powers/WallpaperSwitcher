@@ -1,7 +1,8 @@
 #pragma once
 
 #include "FileSource.h"
-#include "Database.h"
+
+#include <optional>
 
 class App
 {
@@ -17,11 +18,11 @@ private:
     static App m_instance;
     bool m_is_exited = false;
 
+    std::optional<std::filesystem::path> m_current_wallpaper;
+    FileSource m_source;
+
     App();
 
-    FileSource m_source;
-    Database m_database;
-
-    void update_db();
-    void update_outputs();
+    std::optional<std::filesystem::path> get_next_wallpaper();
+    void update_wallpaper();
 };

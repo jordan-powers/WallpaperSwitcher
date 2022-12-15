@@ -26,7 +26,3 @@ const vector<path> FileSource::getWallpapers() const {
     }
     return paths;
 }
-
-const path FileSource::getDatabase() const {
-    return wallpaperPath / "wallpapers.db";
-}

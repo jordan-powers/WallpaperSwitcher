@@ -9,7 +9,6 @@ public:
 
     virtual ~FileSource();
     const std::vector<std::filesystem::path> getWallpapers() const;
-    const std::filesystem::path getDatabase() const;
 
 private:
     std::filesystem::path wallpaperPath{};

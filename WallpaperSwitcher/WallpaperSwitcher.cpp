@@ -16,11 +16,7 @@ void signal_handler(int) {
 
 // TODO: https://www.dreamincode.net/forums/topic/258176-putting-a-program-icon-in-the-system-tray-with-c/
 
-int WinMain(HINSTANCE hInstance,
-    HINSTANCE hPrevInstance,
-    LPSTR    lpCmdLine,
-    int       cmdShow)
-{
+int main() {
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
 
@@ -35,4 +31,12 @@ int WinMain(HINSTANCE hInstance,
     cout << "Goodbye!\n";
 
     return 0;
+}
+
+int WinMain(HINSTANCE hInstance,
+    HINSTANCE hPrevInstance,
+    LPSTR    lpCmdLine,
+    int       cmdShow) {
+
+    main();
 }

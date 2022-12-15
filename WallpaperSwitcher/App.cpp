@@ -9,6 +9,11 @@
 #include <filesystem>
 #include <thread>
 
+#include <cassert>
+#include <cstdlib>
+
+#include <iostream>
+
 static constexpr int sleep_time = 120;
 
 using namespace std;
@@ -17,10 +22,7 @@ App App::m_instance;
 
 App::App()
     : m_source()
-    , m_database(m_source.getDatabase().string())
-{
-    
-}
+{}
 
 inline double time_now() {
     chrono::microseconds ms = chrono::duration_cast<chrono::microseconds>(
@@ -29,58 +31,56 @@ inline double time_now() {
     return ms.count() / (double)1000000;
 }
 
-void App::update_db() {
-    auto entries = m_database.getAllEntries();
+optional<filesystem::path> App::get_next_wallpaper() {
     auto wallpapers = m_source.getWallpapers();
-
-    vector<string> dbSavedWallpapers;
-    for (auto& entry : entries) {
-        dbSavedWallpapers.push_back(entry.path);
+    if (wallpapers.size() == 0) {
+        SystemFunctions::messagebox("No wallpapers found!");
+        return {};
     }
-    vector<string> foundWallpapers;
-    for (auto& wallpaper : wallpapers) {
-        foundWallpapers.push_back(wallpaper.string());
+    sort(wallpapers.begin(), wallpapers.end());
+
+    filesystem::path *current_wallpaper;
+    if (m_current_wallpaper.has_value()) {
+        current_wallpaper = &(*m_current_wallpaper);
+    }
+    else {
+        srand((unsigned)time_now());
+        int next_idx = wallpapers.size() * (static_cast<float>(rand()) / RAND_MAX);
+        cout << next_idx << endl;
+        current_wallpaper = &(wallpapers[next_idx]);
     }
 
-    sort(foundWallpapers.begin(), foundWallpapers.end());
-
-    vector<string> deleteFromDb;
-    vector<string> addToDb;
-
-    set_difference(dbSavedWallpapers.begin(), dbSavedWallpapers.end(), foundWallpapers.begin(), foundWallpapers.end(), back_insert_iterator(deleteFromDb));
-    set_difference(foundWallpapers.begin(), foundWallpapers.end(), dbSavedWallpapers.begin(), dbSavedWallpapers.end(), back_insert_iterator(addToDb));
-
-    for (auto& item : deleteFromDb) {
-        m_database.deleteEntry(item);
+    auto curr_wallpaper_iter = std::find(wallpapers.begin(), wallpapers.end(), *current_wallpaper);
+    if (curr_wallpaper_iter == wallpapers.end()) {
+        wallpapers.push_back(*current_wallpaper);
+        sort(wallpapers.begin(), wallpapers.end());
+        curr_wallpaper_iter = std::find(wallpapers.begin(), wallpapers.end(), *current_wallpaper);
     }
-    for (auto& item : addToDb) {
-        m_database.addEntry({ item, 0 });
+
+    assert(curr_wallpaper_iter != wallpapers.end());
+
+    auto next_wallpaper_iter = curr_wallpaper_iter + 1;
+    if (next_wallpaper_iter == wallpapers.end()) {
+        next_wallpaper_iter = wallpapers.begin();
     }
+
+    assert(next_wallpaper_iter != wallpapers.end());
+
+    m_current_wallpaper = *next_wallpaper_iter;
+
+    return *next_wallpaper_iter;
 }
 
-void App::update_outputs() {
-    auto nextEntryOptional = m_database.getNextEntry();
-
-    if (!nextEntryOptional.has_value()) {
-        SystemFunctions::messagebox("No wallpapers found!");
-        return;
+void App::update_wallpaper() {
+    auto next_wallpaper = get_next_wallpaper();
+    if (next_wallpaper.has_value()) {
+        SystemFunctions::setWallpaper(*next_wallpaper);
+        SystemFunctions::setLockScreen(*next_wallpaper);
     }
-
-    auto entry = nextEntryOptional.value();
-
-    Database::Entry updatedEntry(entry.path, time_now());
-
-    m_database.saveEntry(updatedEntry);
-
-    filesystem::path file(entry.path);
-
-    SystemFunctions::setWallpaper(file);
-    SystemFunctions::setLockScreen(file);
 }
 
 void App::show_next() {
-    update_db();
-    update_outputs();
+    update_wallpaper();
 }
 
 void App::main() {
