@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <thread>
 
-static constexpr int sleep_time = 5;
+static constexpr int sleep_time = 120;
 
 using namespace std;
 

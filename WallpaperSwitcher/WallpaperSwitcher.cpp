@@ -14,6 +14,8 @@ void signal_handler(int) {
     App::getInstance()->interrupt();
 }
 
+// TODO: https://www.dreamincode.net/forums/topic/258176-putting-a-program-icon-in-the-system-tray-with-c/
+
 int WinMain(HINSTANCE hInstance,
     HINSTANCE hPrevInstance,
     LPSTR    lpCmdLine,
