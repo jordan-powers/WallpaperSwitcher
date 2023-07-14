@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FileSource.h"
+#include "SystemInterface.h"
 
 #include <optional>
 
@@ -23,6 +24,8 @@ private:
 
     App();
 
-    std::optional<std::filesystem::path> get_next_wallpaper();
+    std::optional<std::vector<std::filesystem::path>> get_next_wallpapers();
     void update_wallpaper();
+
+    SystemInterface* system;
 };

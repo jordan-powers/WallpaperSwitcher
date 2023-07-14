@@ -1,12 +1,13 @@
 #include "pch.h"
 #include "FileSource.h"
-#include "SystemFunctions.h"
+#include "SystemInterface.h"
 
 using namespace std;
 using namespace std::filesystem;
 
-FileSource::FileSource() {
-    wallpaperPath = SystemFunctions::getHomeDir() / "Documents" / "wallpapers";
+FileSource::FileSource(SystemInterface *system)
+{
+    wallpaperPath = system->getHomeDir() / "Documents" / "wallpapers";
 }
 
 FileSource::~FileSource() {}

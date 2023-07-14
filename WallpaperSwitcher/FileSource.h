@@ -3,9 +3,11 @@
 #include <set>
 #include <filesystem>
 
+#include "SystemInterface.h"
+
 class FileSource {
 public:
-    FileSource();
+    FileSource(SystemInterface* system);
 
     virtual ~FileSource();
     const std::vector<std::filesystem::path> getWallpapers() const;

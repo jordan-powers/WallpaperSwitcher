@@ -4,7 +4,7 @@
 #include <iostream>
 #include <csignal>
 
-#include "SystemFunctions.h"
+#include "SystemInterface.h"
 #include "App.h"
 
 using namespace std;
@@ -22,7 +22,7 @@ int main() {
 
     HANDLE mutex = CreateMutexA(NULL, true, "powers.wallpaperswitcher.singleinstance");
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        SystemFunctions::messagebox("Instance already running!");
+        SystemInterface::messagebox("Instance already running!");
         return 1;
     }
 
