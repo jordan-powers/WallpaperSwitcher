@@ -45,7 +45,7 @@ optional<vector<filesystem::path>> App::get_next_wallpapers() {
         current_wallpaper = &m_current_wallpaper.value();
     }
     else {
-        srand((unsigned)time_now());
+        srand((unsigned)(time_now() * 1000));
         int next_idx = wallpapers.size() * (static_cast<float>(rand()) / RAND_MAX);
         current_wallpaper = &(wallpapers[next_idx]);
     }
